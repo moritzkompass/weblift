@@ -867,15 +867,15 @@
   }
 
   async function insertLeadToSupabase(row){
-    const resp = await fetch(SUPABASE_URL + '/rest/v1/leads', {
+    // Via SECURITY DEFINER RPC um RLS-Quirks zu umgehen
+    const resp = await fetch(SUPABASE_URL + '/rest/v1/rpc/submit_lead', {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(row)
+      body: JSON.stringify({ payload: row })
     });
     if(!resp.ok){
       const txt = await resp.text();
@@ -899,11 +899,17 @@
       timing: ['ASAP','1-3 Monate','3-6 Monate','Flexibel'],
       budget: ['<5k','5-8k','8-15k','15-20k','>20k']
     };
+    // Voice/Video Upload: best-effort, blockt nicht den Insert
     let voiceUrl = null;
-    try {
-      if(recBlob){
+    if(recBlob){
+      try {
         voiceUrl = await uploadVoiceToSupabase(recBlob);
+      } catch(uploadErr){
+        console.warn('[weblift] Voice upload failed (continuing):', uploadErr);
       }
+    }
+    // Lead-Insert ist Pflicht
+    try {
       const row = {
         name: formData.name,
         email: formData.email,
@@ -927,6 +933,9 @@
       console.log('[weblift] Lead submitted to Supabase ✓');
     } catch(e){
       console.error('[weblift] Submit error:', e);
+      alert('Anfrage konnte nicht gesendet werden. Bitte später nochmal versuchen oder direkt an kontakt@moritzkompass.at schreiben.');
+      submitted = false;
+      return;
     }
     step = STEPS.length;
     render();
