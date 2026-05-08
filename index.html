@@ -479,6 +479,101 @@
   .wlq-success p strong { color: var(--black); font-weight: 600; }
   .wlq-success a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
 
+  /* ===== VOICE MESSAGE CARD (Success Screen) ===== */
+  .wlq-voice-card {
+    background: var(--milk);
+    border: 1px solid var(--line);
+    border-radius: 1.1rem;
+    padding: 1rem 1.1rem;
+    margin: 1.75rem auto 1.5rem;
+    max-width: 380px;
+    text-align: left;
+    transition: all 0.25s cubic-bezier(.16,1,.3,1);
+  }
+  .wlq-voice-card:hover {
+    border-color: var(--mint-line);
+    box-shadow: 0 6px 24px rgba(26,97,255,0.08);
+  }
+  .wlq-voice-row {
+    display: flex; align-items: center; gap: 0.85rem;
+  }
+  .wlq-voice-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(26,34,56,0.15);
+    background: var(--white);
+    position: relative;
+  }
+  .wlq-voice-avatar::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px var(--white);
+  }
+  .wlq-voice-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    display: block;
+  }
+  .wlq-voice-play {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--brand);
+    color: var(--white);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-voice-play:hover {
+    background: var(--mint);
+    transform: scale(1.05);
+  }
+  .wlq-voice-play svg { width: 14px; height: 14px; transform: translateX(1px); }
+  .wlq-voice-play.playing svg { transform: translateX(0); }
+  .wlq-voice-bars {
+    flex: 1;
+    display: flex; align-items: center; gap: 2px;
+    height: 28px;
+    cursor: pointer;
+  }
+  .wlq-voice-bar {
+    flex: 1;
+    background: var(--line);
+    border-radius: 2px;
+    transition: background 0.15s, height 0.2s;
+    min-width: 2px;
+  }
+  .wlq-voice-bar.played { background: var(--mint); }
+  .wlq-voice-time {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 32px;
+    text-align: right;
+  }
+  .wlq-voice-caption {
+    margin-top: 0.7rem;
+    padding-left: calc(48px + 0.85rem);
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    letter-spacing: -0.05px;
+  }
+  .wlq-voice-caption strong { color: var(--black); font-weight: 600; }
+  @media (max-width: 460px) {
+    .wlq-voice-card { padding: 0.95rem 1rem; }
+    .wlq-voice-avatar { width: 44px; height: 44px; }
+    .wlq-voice-play { width: 36px; height: 36px; }
+    .wlq-voice-caption { padding-left: calc(44px + 0.85rem); }
+  }
+
   /* ===== TRUST STRIP ===== */
   .wlq-divider {
     height: 1px;
@@ -931,9 +1026,85 @@
     }
   }
 
+  const I_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>';
+  const I_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+
   function renderSuccess(){
-    el('wlqSteps').innerHTML = '<div class="wlq-step"><div class="wlq-success"><div class="wlq-success-icon">'+I.check+'</div><h2>Angekommen.</h2><p>Bestätigung an <strong>'+formData.email+'</strong>.</p><p style="margin-top:1rem">Ich lese jede Anfrage selbst. Antwort innerhalb 24 Stunden.</p><p style="margin-top:1.25rem">Dringend? <a href="mailto:office@weblift.at">office@weblift.at</a></p></div></div>';
+    const bars = 32;
+    let barsHtml = '';
+    // pseudo-waveform: random heights based on deterministic pattern (looks waveform-y)
+    const heights = [40,55,75,60,50,70,85,65,55,80,70,90,75,60,70,85,95,80,65,75,55,70,80,60,75,90,70,55,65,75,55,40];
+    for(let i=0;i<bars;i++){
+      const h = heights[i%heights.length];
+      barsHtml += '<span class="wlq-voice-bar" data-i="'+i+'" style="height:'+h+'%"></span>';
+    }
+    el('wlqSteps').innerHTML = ''
+      + '<div class="wlq-step"><div class="wlq-success">'
+      +   '<div class="wlq-success-icon">'+I.check+'</div>'
+      +   '<h2>Angekommen.</h2>'
+      +   '<p>Bestätigung an <strong>'+formData.email+'</strong>.</p>'
+      +   '<div class="wlq-voice-card">'
+      +     '<div class="wlq-voice-row">'
+      +       '<div class="wlq-voice-avatar"><img src="assets/moritz.jpg" alt="Moritz Kompaß"></div>'
+      +       '<button class="wlq-voice-play" id="wlqVPlay" onclick="wlqVoiceToggle()" aria-label="Abspielen">'+I_PLAY+'</button>'
+      +       '<div class="wlq-voice-bars" id="wlqVBars" onclick="wlqVoiceSeek(event)">'+barsHtml+'</div>'
+      +       '<div class="wlq-voice-time" id="wlqVTime">0:34</div>'
+      +     '</div>'
+      +     '<div class="wlq-voice-caption"><strong>Moritz Kompaß</strong> · Sprachnachricht</div>'
+      +     '<audio id="wlqVAudio" preload="metadata" src="assets/moritz-greeting.m4a"></audio>'
+      +   '</div>'
+      +   '<p style="margin-top:1.25rem">Ich lese jede Anfrage selbst. Antwort innerhalb 24 Stunden.</p>'
+      +   '<p style="margin-top:0.5rem">Dringend? <a href="mailto:office@weblift.at">office@weblift.at</a></p>'
+      + '</div></div>';
+
+    const audio = el('wlqVAudio');
+    if(audio){
+      audio.addEventListener('loadedmetadata', ()=>{
+        if(isFinite(audio.duration)) el('wlqVTime').textContent = fmtTime(Math.round(audio.duration));
+      });
+      audio.addEventListener('timeupdate', ()=>{
+        if(!isFinite(audio.duration)) return;
+        const pct = audio.currentTime / audio.duration;
+        const total = bars;
+        const lit = Math.floor(pct * total);
+        const elBars = document.querySelectorAll('#wlqVBars .wlq-voice-bar');
+        elBars.forEach((b,i)=>b.classList.toggle('played', i<lit));
+        const remain = Math.max(0, Math.round(audio.duration - audio.currentTime));
+        el('wlqVTime').textContent = fmtTime(remain);
+      });
+      audio.addEventListener('ended', ()=>{
+        const btn = el('wlqVPlay');
+        if(btn){ btn.classList.remove('playing'); btn.innerHTML = I_PLAY; btn.setAttribute('aria-label','Abspielen'); }
+        document.querySelectorAll('#wlqVBars .wlq-voice-bar').forEach(b=>b.classList.remove('played'));
+        if(isFinite(audio.duration)) el('wlqVTime').textContent = fmtTime(Math.round(audio.duration));
+      });
+    }
   }
+
+  window.wlqVoiceToggle = function(){
+    const audio = el('wlqVAudio'); const btn = el('wlqVPlay');
+    if(!audio || !btn) return;
+    if(audio.paused){
+      audio.play().then(()=>{
+        btn.classList.add('playing');
+        btn.innerHTML = I_PAUSE;
+        btn.setAttribute('aria-label','Pause');
+      }).catch(e=>console.warn('audio play failed',e));
+    } else {
+      audio.pause();
+      btn.classList.remove('playing');
+      btn.innerHTML = I_PLAY;
+      btn.setAttribute('aria-label','Abspielen');
+    }
+  };
+  window.wlqVoiceSeek = function(ev){
+    const audio = el('wlqVAudio'); const bars = el('wlqVBars');
+    if(!audio || !bars || !isFinite(audio.duration)) return;
+    const rect = bars.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    audio.currentTime = pct * audio.duration;
+  };
 
   window.wlqMulti = function(key, idx){
     if(!ans[key]) ans[key]=[];
