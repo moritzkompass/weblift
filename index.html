@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>weblift — Anfrage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --milk: #fbfaf2;
+    --white: #ffffff;
+    --black: #0c1615;
+    --text-soft: rgba(12,22,21,0.55);
+    --text-muted: rgba(12,22,21,0.35);
+    --brand: #1A2238;
+    --brand-dark: #0f1525;
+    --mint: #47C6B9;
+    --mint-soft: rgba(71,198,185,0.1);
+    --mint-line: rgba(71,198,185,0.5);
+    --line: #e6eced;
+    --disabled: #b8b4a8;
+  }
+  html, body {
+    background: var(--milk);
+    color: var(--black);
+    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  @media (max-width: 540px) {
+    body { padding: 0; align-items: stretch; background: var(--white); }
+  }
+
+  /* ===== CARD ===== */
+  .wlq-wrap {
+    width: 100%;
+    max-width: 540px;
+    background: var(--white);
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  @media (max-width: 540px) {
+    .wlq-wrap { max-width: 100%; min-height: 100dvh; border-radius: 0; box-shadow: none; }
+  }
+
+  /* ===== HEADER ===== */
+  .wlq-header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .wlq-back {
+    width: 32px; height: 32px;
+    border: none; background: transparent;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-soft);
+    border-radius: 50%;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-back:hover { background: rgba(26,34,56,0.05); color: var(--brand); }
+  .wlq-back svg { width: 18px; height: 18px; }
+  .wlq-back.hidden { visibility: hidden; }
+  .wlq-dots {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .wlq-dot {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: var(--line);
+    transition: all 0.5s cubic-bezier(.16,1,.3,1);
+  }
+  .wlq-dot.done { background: var(--mint); }
+  .wlq-dot.current { background: var(--brand); }
+  .wlq-spacer { width: 32px; flex-shrink: 0; }
+
+  /* ===== STEP ===== */
+  .wlq-step {
+    padding: 1.25rem 1.75rem 2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    animation: stepIn 0.45s cubic-bezier(.16,1,.3,1);
+  }
+  @media (max-width: 540px) {
+    .wlq-step { padding: 1.25rem 1.5rem 2rem; }
+  }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== TIME BADGE ===== */
+  .wlq-time {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: var(--mint-soft);
+    color: var(--mint);
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.1px;
+    margin-bottom: 1.25rem;
+    width: fit-content;
+  }
+  .wlq-time svg { width: 13px; height: 13px; }
+
+  /* ===== HEADLINE ===== */
+  .wlq-q {
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.7px;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+    text-wrap: balance;
+    color: var(--black);
+  }
+  .wlq-sub {
+    font-size: 0.93rem;
+    color: var(--text-soft);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.1px;
+  }
+  .wlq-multi-hint {
+    font-size: 0.78rem;
+    color: var(--mint);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    letter-spacing: 0.2px;
+  }
+
+  /* ===== ANSWERS ===== */
+  .wlq-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .wlq-a {
+    padding: 1.15rem 1.25rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--white);
+    color: var(--black);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+    text-align: left;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.85rem;
+    transition: all 0.2s cubic-bezier(.16,1,.3,1);
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-a:hover {
+    border-color: var(--mint);
+    background: var(--mint-soft);
+  }
+  .wlq-a.selected {
+    border-color: var(--mint);
+    background: var(--mint-soft);
+  }
+  .wlq-ind {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .wlq-a:hover .wlq-ind { border-color: var(--mint); }
+  .wlq-a.selected .wlq-ind {
+    border-color: var(--mint);
+    background: var(--mint);
+  }
+  .wlq-ind::after {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--white);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .wlq-a.selected .wlq-ind::after { opacity: 1; }
+  .wlq-a.multi .wlq-ind { border-radius: 0.3rem; }
+  .wlq-a.multi.selected .wlq-ind::after {
+    width: 11px; height: 7px; border-radius: 0;
+    background: transparent;
+    border: 2px solid var(--white);
+    border-top: none; border-right: none;
+    transform: rotate(-45deg) translate(0, -1px);
+    opacity: 1;
+  }
+  .wlq-icon {
+    width: 22px; height: 22px;
+    color: var(--brand);
+    flex-shrink: 0;
+  }
+  .wlq-a-content { display: flex; flex-direction: column; gap: 0.18rem; flex: 1; }
+  .wlq-a-sub {
+    font-size: 0.74rem;
+    color: var(--text-soft);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  /* ===== URL INPUT ===== */
+  .wlq-url-field {
+    position: relative;
+    margin-top: 0.5rem;
+  }
+  .wlq-url-field .url-icon {
+    position: absolute; left: 1.1rem; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    color: var(--mint);
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wlq-url-field .url-icon svg {
+    width: 22px; height: 22px; display: block;
+  }
+  .wlq-input {
+    width: 100%;
+    padding: 1.25rem 1.15rem;
+    border: 2px solid var(--line);
+    border-radius: 0.85rem;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 500;
+    background: var(--white);
+    color: var(--black);
+    outline: none;
+    transition: all 0.25s;
+  }
+  .wlq-url-field .wlq-input { padding-left: 3.15rem; }
+  .wlq-input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(26,34,56,0.06); }
+  .wlq-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+  /* ===== CTA — BIG ROUNDED RECT BUTTON ===== */
+  .wlq-cta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 1.65rem;
+    border: none;
+    border-radius: 1rem;
+    background: var(--disabled);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.15px;
+    cursor: not-allowed;
+    margin-top: 1.25rem;
+    transition: all 0.25s cubic-bezier(.16,1,.3,1);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-cta.on {
+    background: var(--brand);
+    cursor: pointer;
+  }
+  .wlq-cta.on:hover {
+    background: var(--brand-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(26,34,56,0.22);
+  }
+  .wlq-cta svg {
+    width: 1.05rem; height: 1.05rem;
+    transition: transform 0.3s cubic-bezier(.16,1,.3,1);
+  }
+  .wlq-cta.on:hover svg { transform: translateX(4px); }
+
+  /* ===== FORM FIELDS ===== */
+  .wlq-fields { display: flex; flex-direction: column; gap: 0.95rem; }
+  .wlq-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+  .wlq-field-input {
+    width: 100%;
+    padding: 1rem 1.1rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.6rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: var(--white);
+    color: var(--black);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .wlq-field-input:focus { border-color: var(--mint); }
+  .wlq-field-input::placeholder { color: var(--text-muted); }
+  .wlq-phone-row { display: flex; gap: 0.55rem; }
+  .wlq-phone-row select {
+    width: 110px; padding: 1rem 0.85rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.6rem;
+    font-family: inherit; font-size: 0.92rem;
+    background: var(--white); color: var(--black);
+    outline: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%230c1615' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    padding-right: 1.7rem;
+  }
+  .wlq-phone-row .wlq-field-input { flex: 1; }
+  .wlq-checkbox-row {
+    display: flex; gap: 0.6rem; align-items: flex-start;
+    margin-top: 0.5rem;
+    font-size: 0.83rem; color: var(--text-soft);
+    cursor: pointer; line-height: 1.5;
+  }
+  .wlq-checkbox-row input { margin-top: 0.2rem; accent-color: var(--mint); cursor: pointer; }
+  .wlq-checkbox-row a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ===== VOICE ===== */
+  .wlq-rec-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .wlq-rec-tab {
+    flex: 1;
+    padding: 0.85rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.6rem;
+    background: var(--white);
+    color: var(--text-soft);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-rec-tab:hover { color: var(--black); border-color: var(--mint-line); }
+  .wlq-rec-tab.active {
+    border-color: var(--mint);
+    background: var(--mint-soft);
+    color: var(--brand);
+    font-weight: 600;
+  }
+  .wlq-rec-tab svg { width: 16px; height: 16px; }
+  .wlq-rec-area {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 1.25rem; padding: 1.5rem 0;
+  }
+  .wlq-textarea {
+    width: 100%;
+    padding: 1.1rem 1.2rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.75rem;
+    font-family: inherit;
+    font-size: 0.97rem;
+    line-height: 1.5;
+    background: var(--white);
+    color: var(--black);
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 140px;
+    resize: vertical;
+  }
+  .wlq-textarea:focus { border-color: var(--mint); }
+  .wlq-textarea::placeholder { color: var(--text-muted); }
+  .wlq-rec-btn {
+    width: 88px; height: 88px;
+    border-radius: 50%; border: none;
+    background: var(--brand); color: var(--white);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(.16,1,.3,1);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-rec-btn:hover { background: var(--brand-dark); transform: scale(1.05); box-shadow: 0 10px 28px rgba(26,34,56,0.3); }
+  .wlq-rec-btn.recording {
+    background: #d63031;
+    animation: rec-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes rec-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(214,48,49,0.4); }
+    50% { box-shadow: 0 0 0 18px rgba(214,48,49,0); }
+  }
+  .wlq-rec-btn svg { width: 30px; height: 30px; }
+  .wlq-rec-timer { font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--brand); }
+  .wlq-rec-label { font-size: 0.85rem; color: var(--text-soft); text-align: center; }
+  .wlq-rec-preview { width: 100%; }
+  .wlq-rec-preview audio { width: 100%; height: 44px; }
+  .wlq-rec-preview video { width: 100%; max-height: 240px; border-radius: 0.85rem; display: block; }
+  .wlq-rec-actions { display: flex; gap: 0.6rem; width: 100%; margin-top: 0.5rem; }
+  .wlq-rec-action {
+    flex: 1;
+    padding: 0.85rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.6rem;
+    background: var(--white);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-rec-action:hover { border-color: var(--brand); color: var(--brand); }
+  .wlq-rec-action.del { color: #d63031; border-color: rgba(214,48,49,0.2); }
+  .wlq-rec-action.del:hover { background: rgba(214,48,49,0.04); border-color: #d63031; }
+  .wlq-skip {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    padding: 0.85rem;
+    text-align: center;
+    width: 100%;
+    margin-top: 0.5rem;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlq-skip:hover { color: var(--brand); }
+
+  /* ===== SUCCESS ===== */
+  .wlq-success {
+    text-align: center;
+    padding: 2.5rem 1rem;
+  }
+  .wlq-success-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--mint-soft);
+    color: var(--mint);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+  .wlq-success h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+    margin-bottom: 0.6rem;
+    color: var(--black);
+    line-height: 1.2;
+  }
+  .wlq-success p {
+    color: var(--text-soft);
+    font-size: 0.93rem;
+    margin-bottom: 0.4rem;
+    line-height: 1.55;
+  }
+  .wlq-success p strong { color: var(--black); font-weight: 600; }
+  .wlq-success a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ===== TRUST STRIP ===== */
+  .wlq-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 2rem 0 1.5rem;
+  }
+  .wlq-trust-title {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.1px;
+  }
+  .wlq-trust-title strong {
+    color: var(--black);
+    font-weight: 600;
+  }
+  .wlq-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem 1rem;
+    align-items: center;
+    justify-items: center;
+  }
+  .wlq-trust-logo {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--black);
+    opacity: 0.35;
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+    transition: opacity 0.25s;
+  }
+  .wlq-trust-logo:hover { opacity: 0.6; }
+  .wlq-trust-logo img {
+    height: 28px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    filter: grayscale(1) brightness(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="wlq-wrap">
+  <div class="wlq-header">
+    <button class="wlq-back hidden" id="wlqBack" onclick="snd('ds');wlqBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="wlq-dots" id="wlqDots"></div>
+    <div class="wlq-spacer"></div>
+  </div>
+  <div id="wlqSteps"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://lwjyhsdlqpohnttxoacr.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3anloc2RscXBvaG50dHhvYWNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNjE4MTgsImV4cCI6MjA5MzgzNzgxOH0.c5EgX-Inzcb07WjeT0VXDmv7hAqoo5UGCvLf2ZeVQEA';
+  const STEPS = ['website','branche','vorhaben','ziele','timing','budget','voice','kontakt'];
+
+  let step = 0;
+  const ans = { ziele: [] };
+  const formData = { name:'', email:'', phone:'', code:'+43' };
+  let recMode = 'voice', mediaRec=null, recChunks=[], recBlob=null, recUrl=null, recTimer=null, recSecs=0, recStream=null;
+  let submitted = false;
+  let ac = null;
+
+  function snd(t){
+    try {
+      if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
+      const now = ac.currentTime, g = ac.createGain(); g.connect(ac.destination);
+      const o = ac.createOscillator(); o.type='sine'; o.connect(g);
+      if(t==='sel'){ o.frequency.setValueAtTime(880,now); o.frequency.exponentialRampToValueAtTime(1200,now+.04); g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.1); o.start(now); o.stop(now+.1); }
+      else if(t==='ms'){ o.frequency.setValueAtTime(1100,now); o.frequency.exponentialRampToValueAtTime(1400,now+.03); g.gain.setValueAtTime(.07,now); g.gain.exponentialRampToValueAtTime(.001,now+.07); o.start(now); o.stop(now+.07); }
+      else if(t==='ds'){ o.frequency.setValueAtTime(600,now); o.frequency.exponentialRampToValueAtTime(400,now+.05); g.gain.setValueAtTime(.05,now); g.gain.exponentialRampToValueAtTime(.001,now+.08); o.start(now); o.stop(now+.08); }
+      else if(t==='nxt'){ o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(800,now+.12); g.gain.setValueAtTime(.08,now); g.gain.exponentialRampToValueAtTime(.001,now+.18); o.start(now); o.stop(now+.18); const o2=ac.createOscillator(),g2=ac.createGain(); g2.connect(ac.destination); o2.type='sine'; o2.frequency.setValueAtTime(600,now+.05); o2.frequency.exponentialRampToValueAtTime(1200,now+.15); g2.gain.setValueAtTime(.05,now+.05); g2.gain.exponentialRampToValueAtTime(.001,now+.2); o2.connect(g2); o2.start(now+.05); o2.stop(now+.2); }
+    } catch(e){}
+  }
+
+  const I = {
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>',
+    cam: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    workflow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+    layout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+    diamond: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 9l10 13L22 9z"/><path d="M2 9h20"/><path d="m12 2 5 7-5 13L7 9z"/></svg>',
+    trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M5.6 18.4l2.1-2.1M12 21v-3M18.4 18.4l-2.1-2.1M21 12h-3M18.4 5.6l-2.1 2.1"/><circle cx="12" cy="12" r="3"/></svg>',
+    funnel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+    site: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+    cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+    cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+  };
+
+  const el = id => document.getElementById(id);
+  const fmtTime = s => Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);
+
+  function render(){
+    const total = STEPS.length;
+    el('wlqBack').classList.toggle('hidden', step===0 || step>=total);
+    let dots=''; for(let i=0;i<total;i++) dots+='<span class="wlq-dot'+(i<step?' done':i===step?' current':'')+'"></span>';
+    el('wlqDots').innerHTML = dots;
+
+    if(step >= total){ renderSuccess(); return; }
+    const id = STEPS[step];
+    let h = '<div class="wlq-step">';
+
+    if(id==='website'){
+      h += '<div class="wlq-time">'+I.clock+' Dauert nur 2 Minuten</div>';
+      h += '<div class="wlq-q">Wie ist deine aktuelle Website?</div>';
+      h += '<div class="wlq-sub">Damit wir uns vorab ein Bild machen können.</div>';
+      h += '<div class="wlq-url-field"><span class="url-icon">'+I.globe+'</span><input class="wlq-input" id="wlqUrl" type="url" placeholder="deinewebsite.at" value="'+(ans.websiteUrl||'')+'" autofocus></div>';
+      h += '<button id="wlqUrlCta" class="wlq-cta'+(ans.websiteUrl?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+      h += '<button class="wlq-skip" onclick="ans.websiteUrl=\'\';snd(\'nxt\');wlqNext()">Ich habe noch keine Website →</button>';
+      h += '<div class="wlq-divider"></div>';
+      h += '<div class="wlq-trust-title">Diese Unternehmen vertrauen uns <strong>bereits</strong></div>';
+      h += '<div class="wlq-trust-grid">';
+      h += '<div class="wlq-trust-logo">investmentpunk</div>';
+      h += '<div class="wlq-trust-logo">Markus Rotter</div>';
+      h += '<div class="wlq-trust-logo">riffbird</div>';
+      h += '<div class="wlq-trust-logo">Duske Partner</div>';
+      h += '<div class="wlq-trust-logo">heritsch media</div>';
+      h += '<div class="wlq-trust-logo">7 PLUS</div>';
+      h += '</div>';
+    }
+    else if(id==='branche'){
+      const opts = ['Personenmarke (Coach, Berater, Speaker)','Agentur oder SaaS','Anwalt, Steuerberater oder Arzt','KMU','Sonstiges'];
+      h += '<div class="wlq-q">Was trifft am besten auf dich zu?</div>';
+      h += '<div class="wlq-sub">So können wir dich besser einordnen.</div>';
+      h += '<div class="wlq-answers">';
+      opts.forEach((o,i)=>{
+        const sel = ans.branche===i ? ' selected' : '';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqBranche('+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+      });
+      h += '</div>';
+      if(ans.branche===4){
+        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqBrancheText" placeholder="Was machst du?" value="'+(ans.brancheText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
+        h += '<button id="wlqBrancheCta" class="wlq-cta'+(ans.brancheText?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+      }
+    }
+    else if(id==='vorhaben'){
+      const opts = [
+        [I.funnel,'Landingpage / Funnel','Eine fokussierte Seite, ein klares Ziel'],
+        [I.site,'Umfangreiche Website','Mehrere Seiten, voll durchgestylt'],
+        [I.cart,'Online Shop','Verkauf, Checkout, Bestellungen'],
+        [I.spark,'Etwas anderes','Sag\'s uns gleich']
+      ];
+      h += '<div class="wlq-q">Was hast du vor?</div>';
+      h += '<div class="wlq-sub">Welche Art von Projekt soll es werden?</div>';
+      h += '<div class="wlq-answers">';
+      opts.forEach((o,i)=>{
+        const sel = ans.vorhaben===i ? ' selected' : '';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqVorhaben('+i+')"><span class="wlq-ind"></span><span class="wlq-icon">'+o[0]+'</span><span class="wlq-a-content"><span>'+o[1]+'</span><span class="wlq-a-sub">'+o[2]+'</span></span></button>';
+      });
+      h += '</div>';
+      if(ans.vorhaben===3){
+        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqVorhabenText" placeholder="Was möchtest du bauen?" value="'+(ans.vorhabenText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
+        h += '<button id="wlqVorhabenCta" class="wlq-cta'+(ans.vorhabenText?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+      }
+    }
+    else if(id==='ziele'){
+      const opts = [
+        [I.diamond,'Premium-Wirkung','Qualität, die meine Marke verdient'],
+        [I.funnel,'Mehr qualifizierte Anfragen','Leads, Kunden, Bewerber — die richtigen'],
+        [I.eye,'Top-Sichtbarkeit','Bei Google ganz oben gefunden werden'],
+        [I.workflow,'Pflegeleicht','Site kümmert sich selbst, nicht ich'],
+        [I.pen,'Einzigartiger Look','Kein Standard-Webflow-Template'],
+        [I.trending,'Mit der Zeit besser werden','Site, die wächst statt altert'],
+        [I.spark,'Etwas anderes','Sag\'s uns gleich']
+      ];
+      h += '<div class="wlq-q">Was ist dir besonders wichtig?</div>';
+      h += '<div class="wlq-sub">Wähl alles aus, was zählt.</div>';
+      h += '<div class="wlq-multi-hint">Mehrfachauswahl möglich</div>';
+      h += '<div class="wlq-answers">';
+      opts.forEach((o,i)=>{
+        const sel = ans.ziele.includes(i) ? ' selected' : '';
+        h += '<button class="wlq-a multi'+sel+'" onclick="wlqMulti(\'ziele\','+i+')"><span class="wlq-ind"></span><span class="wlq-icon">'+o[0]+'</span><span class="wlq-a-content"><span>'+o[1]+'</span><span class="wlq-a-sub">'+o[2]+'</span></span></button>';
+      });
+      h += '</div>';
+      h += '<button class="wlq-cta'+(ans.ziele.length>0?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+    }
+    else if(id==='timing'){
+      const opts = ['So schnell wie möglich','In 1–3 Monaten','In 3–6 Monaten','Flexibel'];
+      h += '<div class="wlq-q">Wann möchtest du starten?</div>';
+      h += '<div class="wlq-sub">Damit wir wissen, wie dringend.</div>';
+      h += '<div class="wlq-answers">';
+      opts.forEach((o,i)=>{
+        const sel = ans.timing===i ? ' selected' : '';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'timing\','+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+      });
+      h += '</div>';
+    }
+    else if(id==='budget'){
+      const opts = ['unter 5.000 €','5.000 – 8.000 €','8.000 – 15.000 €','15.000 – 20.000 €','über 20.000 € — sprechen wir'];
+      h += '<div class="wlq-q">Wie viel Budget hast du für deine neue Website?</div>';
+      h += '<div class="wlq-sub">Wir verstecken Preise nicht — sag uns ehrlich, wo du stehst.</div>';
+      h += '<div class="wlq-answers">';
+      opts.forEach((o,i)=>{
+        const sel = ans.budget===i ? ' selected' : '';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'budget\','+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+      });
+      h += '</div>';
+    }
+    else if(id==='voice'){
+      h += '<div class="wlq-q">Hast du noch Input für uns?</div>';
+      h += '<div class="wlq-sub">Sprich, zeig oder schreib uns kurz, wie deine perfekte Website aussehen würde. Optional.</div>';
+      h += '<div class="wlq-rec-toggle">';
+      h += '<button class="wlq-rec-tab'+(recMode==='voice'?' active':'')+'" onclick="wlqRecMode(\'voice\')">'+I.mic+' Sprache</button>';
+      h += '<button class="wlq-rec-tab'+(recMode==='video'?' active':'')+'" onclick="wlqRecMode(\'video\')">'+I.cam+' Video</button>';
+      h += '<button class="wlq-rec-tab'+(recMode==='text'?' active':'')+'" onclick="wlqRecMode(\'text\')">'+I.pen+' Text</button>';
+      h += '</div>';
+      h += '<div class="wlq-rec-area" id="wlqRecArea"></div>';
+      h += '<button class="wlq-skip" id="wlqSkip" onclick="snd(\'nxt\');wlqNext()">Überspringen</button>';
+    }
+    else if(id==='kontakt'){
+      h += '<div class="wlq-q">Wie erreichen wir dich?</div>';
+      h += '<div class="wlq-sub">Letzter Schritt — wir antworten innerhalb 24 Stunden.</div>';
+      h += '<div class="wlq-fields">';
+      h += '<div class="wlq-field"><label>Name</label><input class="wlq-field-input" id="wlqName" placeholder="Maria Müller" value="'+formData.name+'"></div>';
+      h += '<div class="wlq-field"><label>E-Mail</label><input class="wlq-field-input" id="wlqEmail" type="email" placeholder="maria@example.com" value="'+formData.email+'"></div>';
+      h += '<div class="wlq-field"><label>Telefon (optional)</label><div class="wlq-phone-row"><select id="wlqCode"><option value="+43"'+(formData.code==='+43'?' selected':'')+'>🇦🇹 +43</option><option value="+49"'+(formData.code==='+49'?' selected':'')+'>🇩🇪 +49</option><option value="+41"'+(formData.code==='+41'?' selected':'')+'>🇨🇭 +41</option></select><input class="wlq-field-input" id="wlqPhone" type="tel" placeholder="660 1234567" value="'+formData.phone+'"></div></div>';
+      h += '<label class="wlq-checkbox-row"><input type="checkbox" id="wlqDsgvo"><span>Ich habe die <a href="/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen und stimme zu.</span></label>';
+      h += '</div>';
+      h += '<button class="wlq-cta" id="wlqSubmit" onclick="wlqSubmit()">Anfrage senden '+I.arrow+'</button>';
+    }
+
+    h += '</div>';
+    el('wlqSteps').innerHTML = h;
+
+    if(id==='website'){
+      const ui = el('wlqUrl');
+      if(ui){ setTimeout(()=>ui.focus(),50); ui.addEventListener('input', e => { ans.websiteUrl = e.target.value.trim(); el('wlqUrlCta').classList.toggle('on', e.target.value.trim().length>3); }); ui.addEventListener('keydown', e => { if(e.key==='Enter' && ans.websiteUrl && ans.websiteUrl.length>3){ e.preventDefault(); snd('nxt'); wlqNext(); } }); }
+    }
+    if(id==='voice') renderRec();
+    if(id==='kontakt') wireForm();
+    if(id==='branche' && ans.branche===4){
+      const ti = el('wlqBrancheText');
+      if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.brancheText = e.target.value.trim(); el('wlqBrancheCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+    }
+    if(id==='vorhaben' && ans.vorhaben===3){
+      const ti = el('wlqVorhabenText');
+      if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.vorhabenText = e.target.value.trim(); el('wlqVorhabenCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+    }
+  }
+
+  function renderSuccess(){
+    el('wlqSteps').innerHTML = '<div class="wlq-step"><div class="wlq-success"><div class="wlq-success-icon">'+I.check+'</div><h2>Danke — wir melden uns innerhalb 24 Stunden.</h2><p>Bestätigung geht an <strong>'+formData.email+'</strong>.</p><p style="margin-top:1.25rem">Falls dringend: <a href="mailto:kontakt@moritzkompass.at">kontakt@moritzkompass.at</a></p></div></div>';
+  }
+
+  window.wlqMulti = function(key, idx){
+    if(!ans[key]) ans[key]=[];
+    const i = ans[key].indexOf(idx);
+    if(i>-1){ ans[key].splice(i,1); snd('ds'); }
+    else { ans[key].push(idx); snd('ms'); }
+    document.querySelectorAll('.wlq-a').forEach((b,bi)=>b.classList.toggle('selected', ans[key].includes(bi)));
+    const cb = document.querySelector('.wlq-cta');
+    if(cb) cb.classList.toggle('on', ans[key].length>0);
+  };
+  window.wlqSingle = function(key, idx){
+    ans[key] = idx;
+    snd('sel');
+    const btns = document.querySelectorAll('.wlq-a');
+    btns.forEach(b=>b.classList.remove('selected'));
+    btns[idx].classList.add('selected');
+    setTimeout(()=>{ snd('nxt'); wlqNext(); }, 350);
+  };
+  window.wlqBranche = function(idx){
+    ans.branche = idx;
+    snd('sel');
+    if(idx===4){ render(); }
+    else { ans.brancheText=''; const btns=document.querySelectorAll('.wlq-a'); btns.forEach(b=>b.classList.remove('selected')); btns[idx].classList.add('selected'); setTimeout(()=>{ snd('nxt'); wlqNext(); }, 350); }
+  };
+  window.wlqVorhaben = function(idx){
+    ans.vorhaben = idx;
+    snd('sel');
+    if(idx===3){ render(); }
+    else { ans.vorhabenText=''; const btns=document.querySelectorAll('.wlq-a'); btns.forEach(b=>b.classList.remove('selected')); btns[idx].classList.add('selected'); setTimeout(()=>{ snd('nxt'); wlqNext(); }, 350); }
+  };
+  window.wlqNext = function(){ if(step<STEPS.length){ step++; render(); } };
+  window.wlqBack = function(){ if(step>0){ step--; render(); } };
+
+  window.wlqRecMode = function(m){
+    recMode = m; recBlob=null;
+    if(recUrl){ URL.revokeObjectURL(recUrl); recUrl=null; }
+    if(recStream){ recStream.getTracks().forEach(t=>t.stop()); recStream=null; }
+    render();
+  };
+  function renderRec(){
+    const a = el('wlqRecArea'); if(!a) return;
+    if(recMode === 'text'){
+      a.innerHTML = '<textarea class="wlq-textarea" id="wlqVoiceText" placeholder="Schreib uns kurz, was du dir vorstellst...">'+(ans.voiceText||'')+'</textarea>';
+      setTimeout(()=>{
+        const ti = el('wlqVoiceText'); if(!ti) return;
+        ti.focus();
+        const swapBtn = () => {
+          const skip = el('wlqSkip'), cta = el('wlqVoiceCta');
+          if(ans.voiceText && ans.voiceText.length > 2){
+            if(skip) skip.outerHTML = '<button class="wlq-cta on" id="wlqVoiceCta" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+          } else {
+            if(cta) cta.outerHTML = '<button class="wlq-skip" id="wlqSkip" onclick="snd(\'nxt\');wlqNext()">Überspringen</button>';
+          }
+        };
+        ti.addEventListener('input', e => { ans.voiceText = e.target.value.trim(); swapBtn(); });
+        if(ans.voiceText) swapBtn();
+      }, 50);
+      return;
+    }
+    if(recBlob && recUrl){
+      let h = '<div class="wlq-rec-preview">';
+      if(recMode==='video') h += '<video src="'+recUrl+'" controls playsinline></video>';
+      else h += '<audio src="'+recUrl+'" controls></audio>';
+      h += '</div>';
+      h += '<div class="wlq-rec-actions"><button class="wlq-rec-action del" onclick="wlqDelRec()">Löschen</button><button class="wlq-rec-action" onclick="wlqDelRec();setTimeout(wlqStartRec,100)">Neu aufnehmen</button></div>';
+      a.innerHTML = h;
+      const skip = el('wlqSkip');
+      if(skip) skip.outerHTML = '<button class="wlq-cta on" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
+    } else {
+      a.innerHTML = '<button class="wlq-rec-btn" onclick="wlqStartRec()">'+(recMode==='video'?I.cam:I.mic)+'</button><div class="wlq-rec-label">Tippe, um '+(recMode==='video'?'ein Video':'eine Sprachnachricht')+' aufzunehmen</div>';
+    }
+  }
+  window.wlqStartRec = function(){
+    const con = recMode==='video' ? {audio:true,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}} : {audio:true};
+    navigator.mediaDevices.getUserMedia(con).then(stream=>{
+      recStream = stream; recChunks=[];
+      let mt = '';
+      const tries = recMode==='video' ? ['video/webm;codecs=vp9,opus','video/webm','video/mp4'] : ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac'];
+      for(const t of tries){ if(MediaRecorder.isTypeSupported(t)){ mt=t; break; } }
+      mediaRec = mt ? new MediaRecorder(stream,{mimeType:mt}) : new MediaRecorder(stream);
+      mediaRec.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
+      mediaRec.onstop = () => {
+        recBlob = new Blob(recChunks, {type: mediaRec.mimeType||(recMode==='video'?'video/webm':'audio/webm')});
+        if(recUrl) URL.revokeObjectURL(recUrl);
+        recUrl = URL.createObjectURL(recBlob);
+        stream.getTracks().forEach(t=>t.stop());
+        recStream = null;
+        clearInterval(recTimer);
+        renderRec();
+      };
+      mediaRec.start();
+      recSecs = 0;
+      recTimer = setInterval(()=>{ recSecs++; const t=el('wlqRecTimer'); if(t) t.textContent=fmtTime(recSecs); }, 1000);
+      const a = el('wlqRecArea');
+      let h = '';
+      if(recMode==='video') h += '<div class="wlq-rec-preview"><video id="wlqRecPrev" autoplay muted playsinline></video></div>';
+      h += '<button class="wlq-rec-btn recording" onclick="wlqStopRec()">'+I.stop+'</button>';
+      h += '<div class="wlq-rec-timer" id="wlqRecTimer">0:00</div>';
+      h += '<div class="wlq-rec-label">Aufnahme läuft — tippe zum Beenden</div>';
+      a.innerHTML = h;
+      if(recMode==='video'){ const p = el('wlqRecPrev'); if(p) p.srcObject = stream; }
+    }).catch(()=>{ alert('Bitte erlaube Zugriff auf '+(recMode==='video'?'Kamera und Mikrofon':'Mikrofon')+'.'); });
+  };
+  window.wlqStopRec = function(){ if(mediaRec && mediaRec.state==='recording') mediaRec.stop(); };
+  window.wlqDelRec = function(){
+    recBlob=null;
+    if(recUrl){ URL.revokeObjectURL(recUrl); recUrl=null; }
+    recChunks=[]; recSecs=0;
+    renderRec();
+  };
+
+  function wireForm(){
+    const check = ()=> {
+      const n = el('wlqName').value.trim(), e = el('wlqEmail').value.trim();
+      const ok = n.length>1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && el('wlqDsgvo').checked;
+      el('wlqSubmit').classList.toggle('on', ok);
+    };
+    ['wlqName','wlqEmail'].forEach(id=>el(id).addEventListener('input', check));
+    el('wlqDsgvo').addEventListener('change', check);
+  }
+  async function uploadVoiceToSupabase(blob){
+    const ext = recMode === 'video' ? 'webm' : 'webm';
+    const filename = Date.now() + '-' + Math.random().toString(36).substring(2,10) + '.' + ext;
+    const url = SUPABASE_URL + '/storage/v1/object/voice-messages/' + filename;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': blob.type || (recMode === 'video' ? 'video/webm' : 'audio/webm')
+      },
+      body: blob
+    });
+    if(!resp.ok) throw new Error('Voice upload failed: ' + resp.status);
+    return SUPABASE_URL + '/storage/v1/object/public/voice-messages/' + filename;
+  }
+
+  async function insertLeadToSupabase(row){
+    const resp = await fetch(SUPABASE_URL + '/rest/v1/leads', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(row)
+    });
+    if(!resp.ok){
+      const txt = await resp.text();
+      throw new Error('Lead insert failed: ' + resp.status + ' — ' + txt);
+    }
+  }
+
+  window.wlqSubmit = async function(){
+    if(submitted) return;
+    formData.name = el('wlqName').value.trim();
+    formData.email = el('wlqEmail').value.trim();
+    formData.code = el('wlqCode').value;
+    formData.phone = el('wlqPhone').value.trim();
+    if(!formData.name || !formData.email || !el('wlqDsgvo').checked) return;
+    submitted = true;
+    snd('nxt');
+    const labels = {
+      ziele: ['Premium-Wirkung','Mehr qualifizierte Anfragen','Top-Sichtbarkeit','Pflegeleicht','Einzigartiger Look','Mit der Zeit besser werden','Etwas anderes'],
+      branche: ['Personenmarke','Agentur/SaaS','Anwalt/Steuerberater/Arzt','KMU','Sonstiges'],
+      vorhaben: ['Landingpage/Funnel','Umfangreiche Website','Online Shop','Sonstiges'],
+      timing: ['ASAP','1-3 Monate','3-6 Monate','Flexibel'],
+      budget: ['<5k','5-8k','8-15k','15-20k','>20k']
+    };
+    let voiceUrl = null;
+    try {
+      if(recBlob){
+        voiceUrl = await uploadVoiceToSupabase(recBlob);
+      }
+      const row = {
+        name: formData.name,
+        email: formData.email,
+        telefon: formData.phone ? formData.code + ' ' + formData.phone : null,
+        website_url: ans.websiteUrl || null,
+        branche: ans.branche !== undefined ? labels.branche[ans.branche] : null,
+        branche_sonstiges: ans.brancheText || null,
+        vorhaben: ans.vorhaben !== undefined ? labels.vorhaben[ans.vorhaben] : null,
+        vorhaben_sonstiges: ans.vorhabenText || null,
+        ziele: ans.ziele.map(i => labels.ziele[i]),
+        go_live: ans.timing !== undefined ? labels.timing[ans.timing] : null,
+        budget: ans.budget !== undefined ? labels.budget[ans.budget] : null,
+        voice_message_type: recBlob ? recMode : (ans.voiceText ? 'text' : null),
+        voice_message_duration: recBlob ? recSecs : null,
+        voice_message_text: ans.voiceText || null,
+        voice_message_url: voiceUrl,
+        referrer_url: document.referrer || null,
+        user_agent: navigator.userAgent || null
+      };
+      await insertLeadToSupabase(row);
+      console.log('[weblift] Lead submitted to Supabase ✓');
+    } catch(e){
+      console.error('[weblift] Submit error:', e);
+    }
+    step = STEPS.length;
+    render();
+  };
+
+  render();
+</script>
+</body>
+</html>
