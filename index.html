@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>weblift — Anfrage</title>
+<title>weblift Anfrage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -251,7 +251,7 @@
   .wlq-input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(26,34,56,0.06); }
   .wlq-input::placeholder { color: var(--text-muted); font-weight: 400; }
 
-  /* ===== CTA — BIG ROUNDED RECT BUTTON ===== */
+  /* ===== CTA: BIG ROUNDED RECT BUTTON ===== */
   .wlq-cta {
     display: flex;
     justify-content: center;
@@ -515,6 +515,28 @@
     filter: grayscale(1) brightness(0);
     opacity: 1;
   }
+
+  /* ===== FOOTER ===== */
+  .wlq-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem 1.25rem;
+    font-size: 0.74rem;
+    color: var(--text-soft);
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+  .wlq-footer-links { display: flex; gap: 1.1rem; }
+  .wlq-footer a { color: var(--text-soft); text-decoration: none; transition: color 0.2s; }
+  .wlq-footer a:hover { color: var(--brand); }
+  @media (max-width: 420px) {
+    .wlq-footer { font-size: 0.7rem; padding: 0.85rem 1rem 1rem; }
+    .wlq-footer-links { gap: 0.85rem; }
+  }
 </style>
 </head>
 <body>
@@ -528,6 +550,13 @@
     <div class="wlq-spacer"></div>
   </div>
   <div id="wlqSteps"></div>
+  <footer class="wlq-footer">
+    <div>© 2026 Kompass Consulting GmbH</div>
+    <div class="wlq-footer-links">
+      <a href="/impressum">Impressum</a>
+      <a href="/datenschutz">Datenschutzerklärung</a>
+    </div>
+  </footer>
 </div>
 
 <script>
@@ -589,14 +618,14 @@
     let h = '<div class="wlq-step">';
 
     if(id==='website'){
-      h += '<div class="wlq-time">'+I.clock+' Dauert nur 2 Minuten</div>';
-      h += '<div class="wlq-q">Wie ist deine aktuelle Website?</div>';
-      h += '<div class="wlq-sub">Damit wir uns vorab ein Bild machen können.</div>';
+      h += '<div class="wlq-time">'+I.clock+' Zwei Minuten.</div>';
+      h += '<div class="wlq-q">Was ist deine Website?</div>';
+      h += '<div class="wlq-sub">Wir schauen sie uns vorab an.</div>';
       h += '<div class="wlq-url-field"><span class="url-icon">'+I.globe+'</span><input class="wlq-input" id="wlqUrl" type="url" placeholder="deinewebsite.at" value="'+(ans.websiteUrl||'')+'" autofocus></div>';
       h += '<button id="wlqUrlCta" class="wlq-cta'+(ans.websiteUrl?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
-      h += '<button class="wlq-skip" onclick="ans.websiteUrl=\'\';snd(\'nxt\');wlqNext()">Ich habe noch keine Website →</button>';
+      h += '<button class="wlq-skip" onclick="ans.websiteUrl=\'\';snd(\'nxt\');wlqNext()">Ich habe noch keine.</button>';
       h += '<div class="wlq-divider"></div>';
-      h += '<div class="wlq-trust-title">Diese Unternehmen vertrauen uns <strong>bereits</strong></div>';
+      h += '<div class="wlq-trust-title">Schon mit weblift gebaut.</div>';
       h += '<div class="wlq-trust-grid">';
       h += '<div class="wlq-trust-logo">investmentpunk</div>';
       h += '<div class="wlq-trust-logo">Markus Rotter</div>';
@@ -608,8 +637,8 @@
     }
     else if(id==='branche'){
       const opts = ['Personenmarke (Coach, Berater, Speaker)','Agentur oder SaaS','Anwalt, Steuerberater oder Arzt','KMU','Sonstiges'];
-      h += '<div class="wlq-q">Was trifft am besten auf dich zu?</div>';
-      h += '<div class="wlq-sub">So können wir dich besser einordnen.</div>';
+      h += '<div class="wlq-q">Was machst du?</div>';
+      h += '<div class="wlq-sub">Damit wir wissen, mit wem wir reden.</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.branche===i ? ' selected' : '';
@@ -628,8 +657,8 @@
         [I.cart,'Online Shop','Verkauf, Checkout, Bestellungen'],
         [I.spark,'Etwas anderes','Sag\'s uns gleich']
       ];
-      h += '<div class="wlq-q">Was hast du vor?</div>';
-      h += '<div class="wlq-sub">Welche Art von Projekt soll es werden?</div>';
+      h += '<div class="wlq-q">Was bauen wir?</div>';
+      h += '<div class="wlq-sub">Welche Art Projekt?</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.vorhaben===i ? ' selected' : '';
@@ -643,16 +672,16 @@
     }
     else if(id==='ziele'){
       const opts = [
-        [I.diamond,'Premium-Wirkung','Qualität, die meine Marke verdient'],
-        [I.funnel,'Mehr qualifizierte Anfragen','Leads, Kunden, Bewerber — die richtigen'],
-        [I.eye,'Top-Sichtbarkeit','Bei Google ganz oben gefunden werden'],
-        [I.workflow,'Pflegeleicht','Site kümmert sich selbst, nicht ich'],
-        [I.pen,'Einzigartiger Look','Kein Standard-Webflow-Template'],
-        [I.trending,'Mit der Zeit besser werden','Site, die wächst statt altert'],
+        [I.diamond,'Premium-Wirkung','Aussehen das meine Marke verdient.'],
+        [I.funnel,'Mehr qualifizierte Anfragen','Leute, die wirklich passen.'],
+        [I.eye,'Top-Sichtbarkeit','Bei Google oben.'],
+        [I.workflow,'Pflegeleicht','Die Site pflegt sich selbst.'],
+        [I.pen,'Einzigartiger Look','Nicht der gleiche Look wie überall.'],
+        [I.trending,'Mit der Zeit besser werden','Wird mit der Zeit besser.'],
         [I.spark,'Etwas anderes','Sag\'s uns gleich']
       ];
-      h += '<div class="wlq-q">Was ist dir besonders wichtig?</div>';
-      h += '<div class="wlq-sub">Wähl alles aus, was zählt.</div>';
+      h += '<div class="wlq-q">Was ist dir wichtig?</div>';
+      h += '<div class="wlq-sub">Mehrere Antworten möglich.</div>';
       h += '<div class="wlq-multi-hint">Mehrfachauswahl möglich</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
@@ -663,9 +692,9 @@
       h += '<button class="wlq-cta'+(ans.ziele.length>0?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
     }
     else if(id==='timing'){
-      const opts = ['So schnell wie möglich','In 1–3 Monaten','In 3–6 Monaten','Flexibel'];
-      h += '<div class="wlq-q">Wann möchtest du starten?</div>';
-      h += '<div class="wlq-sub">Damit wir wissen, wie dringend.</div>';
+      const opts = ['So schnell wie möglich','In 1 bis 3 Monaten','In 3 bis 6 Monaten','Flexibel'];
+      h += '<div class="wlq-q">Wann startest du?</div>';
+      h += '<div class="wlq-sub">Damit wir Termine planen.</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.timing===i ? ' selected' : '';
@@ -674,9 +703,9 @@
       h += '</div>';
     }
     else if(id==='budget'){
-      const opts = ['unter 5.000 €','5.000 – 8.000 €','8.000 – 15.000 €','15.000 – 20.000 €','über 20.000 € — sprechen wir'];
-      h += '<div class="wlq-q">Wie viel Budget hast du für deine neue Website?</div>';
-      h += '<div class="wlq-sub">Wir verstecken Preise nicht — sag uns ehrlich, wo du stehst.</div>';
+      const opts = ['unter 5.000 €','5.000 bis 8.000 €','8.000 bis 15.000 €','15.000 bis 20.000 €','über 20.000 €. Sprechen wir.'];
+      h += '<div class="wlq-q">Was ist dein Budget?</div>';
+      h += '<div class="wlq-sub">Reden wir offen. Wo stehst du?</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.budget===i ? ' selected' : '';
@@ -685,8 +714,8 @@
       h += '</div>';
     }
     else if(id==='voice'){
-      h += '<div class="wlq-q">Hast du noch Input für uns?</div>';
-      h += '<div class="wlq-sub">Sprich, zeig oder schreib uns kurz, wie deine perfekte Website aussehen würde. Optional.</div>';
+      h += '<div class="wlq-q">Was sollen wir noch wissen?</div>';
+      h += '<div class="wlq-sub">Sprich, zeig oder schreib. Optional.</div>';
       h += '<div class="wlq-rec-toggle">';
       h += '<button class="wlq-rec-tab'+(recMode==='voice'?' active':'')+'" onclick="wlqRecMode(\'voice\')">'+I.mic+' Sprache</button>';
       h += '<button class="wlq-rec-tab'+(recMode==='video'?' active':'')+'" onclick="wlqRecMode(\'video\')">'+I.cam+' Video</button>';
@@ -697,7 +726,7 @@
     }
     else if(id==='kontakt'){
       h += '<div class="wlq-q">Wie erreichen wir dich?</div>';
-      h += '<div class="wlq-sub">Letzter Schritt — wir antworten innerhalb 24 Stunden.</div>';
+      h += '<div class="wlq-sub">Letzter Schritt. Antwort innerhalb 24 Stunden.</div>';
       h += '<div class="wlq-fields">';
       h += '<div class="wlq-field"><label>Name</label><input class="wlq-field-input" id="wlqName" placeholder="Maria Müller" value="'+formData.name+'"></div>';
       h += '<div class="wlq-field"><label>E-Mail</label><input class="wlq-field-input" id="wlqEmail" type="email" placeholder="maria@example.com" value="'+formData.email+'"></div>';
@@ -727,7 +756,7 @@
   }
 
   function renderSuccess(){
-    el('wlqSteps').innerHTML = '<div class="wlq-step"><div class="wlq-success"><div class="wlq-success-icon">'+I.check+'</div><h2>Danke — wir melden uns innerhalb 24 Stunden.</h2><p>Bestätigung geht an <strong>'+formData.email+'</strong>.</p><p style="margin-top:1.25rem">Falls dringend: <a href="mailto:kontakt@moritzkompass.at">kontakt@moritzkompass.at</a></p></div></div>';
+    el('wlqSteps').innerHTML = '<div class="wlq-step"><div class="wlq-success"><div class="wlq-success-icon">'+I.check+'</div><h2>Hat geklappt.</h2><p>Bestätigung an <strong>'+formData.email+'</strong>.</p><p style="margin-top:1.25rem">Dringend? <a href="mailto:office@weblift.at">office@weblift.at</a></p></div></div>';
   }
 
   window.wlqMulti = function(key, idx){
@@ -771,7 +800,7 @@
   function renderRec(){
     const a = el('wlqRecArea'); if(!a) return;
     if(recMode === 'text'){
-      a.innerHTML = '<textarea class="wlq-textarea" id="wlqVoiceText" placeholder="Schreib uns kurz, was du dir vorstellst...">'+(ans.voiceText||'')+'</textarea>';
+      a.innerHTML = '<textarea class="wlq-textarea" id="wlqVoiceText" placeholder="Was du im Kopf hast.">'+(ans.voiceText||'')+'</textarea>';
       setTimeout(()=>{
         const ti = el('wlqVoiceText'); if(!ti) return;
         ti.focus();
@@ -827,7 +856,7 @@
       if(recMode==='video') h += '<div class="wlq-rec-preview"><video id="wlqRecPrev" autoplay muted playsinline></video></div>';
       h += '<button class="wlq-rec-btn recording" onclick="wlqStopRec()">'+I.stop+'</button>';
       h += '<div class="wlq-rec-timer" id="wlqRecTimer">0:00</div>';
-      h += '<div class="wlq-rec-label">Aufnahme läuft — tippe zum Beenden</div>';
+      h += '<div class="wlq-rec-label">Tippen zum Beenden.</div>';
       a.innerHTML = h;
       if(recMode==='video'){ const p = el('wlqRecPrev'); if(p) p.srcObject = stream; }
     }).catch(()=>{ alert('Bitte erlaube Zugriff auf '+(recMode==='video'?'Kamera und Mikrofon':'Mikrofon')+'.'); });
@@ -879,7 +908,7 @@
     });
     if(!resp.ok){
       const txt = await resp.text();
-      throw new Error('Lead insert failed: ' + resp.status + ' — ' + txt);
+      throw new Error('Lead insert failed: ' + resp.status + ' / ' + txt);
     }
   }
 
@@ -933,7 +962,7 @@
       console.log('[weblift] Lead submitted to Supabase ✓');
     } catch(e){
       console.error('[weblift] Submit error:', e);
-      alert('Anfrage konnte nicht gesendet werden. Bitte später nochmal versuchen oder direkt an kontakt@moritzkompass.at schreiben.');
+      alert('Anfrage konnte nicht gesendet werden. Bitte später nochmal versuchen oder direkt an office@weblift.at schreiben.');
       submitted = false;
       return;
     }
