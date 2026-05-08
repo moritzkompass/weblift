@@ -822,7 +822,7 @@
       });
       h += '</div>';
       if(ans.branche===4){
-        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqBrancheText" placeholder="Was machst du?" value="'+(ans.brancheText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
+        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqBrancheText" placeholder="Was genau machst du?" value="'+(ans.brancheText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
         h += '<button id="wlqBrancheCta" class="wlq-cta'+(ans.brancheText?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
       }
     }
