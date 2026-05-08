@@ -34,12 +34,20 @@
   }
   body {
     display: flex;
+    flex-direction: column;
+    min-height: 100vh; min-height: 100dvh;
+    padding: 1.5rem 1.5rem 0;
+  }
+  .wlq-wrap-outer {
+    flex: 1;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    width: 100%;
   }
   @media (max-width: 540px) {
-    body { padding: 0; align-items: stretch; background: var(--white); }
+    body { padding: 0; }
+    .wlq-wrap-outer { align-items: stretch; }
   }
 
   /* ===== CARD ===== */
@@ -516,48 +524,54 @@
     opacity: 1;
   }
 
-  /* ===== FOOTER ===== */
+  /* ===== PAGE FOOTER ===== */
   .wlq-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem 1.25rem;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 1.5rem 0.5rem;
     font-size: 0.74rem;
     color: var(--text-soft);
-    border-top: 1px solid var(--line);
     flex-wrap: wrap;
     gap: 0.6rem;
-    margin-top: auto;
     flex-shrink: 0;
   }
   .wlq-footer-links { display: flex; gap: 1.1rem; }
   .wlq-footer a { color: var(--text-soft); text-decoration: none; transition: color 0.2s; }
   .wlq-footer a:hover { color: var(--brand); }
+  @media (max-width: 540px) {
+    .wlq-footer { padding: 1.25rem 1.25rem 1.5rem; max-width: 100%; }
+  }
   @media (max-width: 420px) {
-    .wlq-footer { font-size: 0.7rem; padding: 0.85rem 1rem 1rem; }
+    .wlq-footer { font-size: 0.7rem; }
     .wlq-footer-links { gap: 0.85rem; }
   }
 </style>
 </head>
 <body>
 
-<div class="wlq-wrap">
-  <div class="wlq-header">
-    <button class="wlq-back hidden" id="wlqBack" onclick="snd('ds');wlqBack()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <div class="wlq-dots" id="wlqDots"></div>
-    <div class="wlq-spacer"></div>
-  </div>
-  <div id="wlqSteps"></div>
-  <footer class="wlq-footer">
-    <div>© 2026 Kompass Consulting GmbH</div>
-    <div class="wlq-footer-links">
-      <a href="/impressum">Impressum</a>
-      <a href="/datenschutz">Datenschutzerklärung</a>
+<div class="wlq-wrap-outer">
+  <div class="wlq-wrap">
+    <div class="wlq-header">
+      <button class="wlq-back hidden" id="wlqBack" onclick="snd('ds');wlqBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="wlq-dots" id="wlqDots"></div>
+      <div class="wlq-spacer"></div>
     </div>
-  </footer>
+    <div id="wlqSteps"></div>
+  </div>
 </div>
+<footer class="wlq-footer">
+  <div>© 2026 Kompass Consulting GmbH</div>
+  <div class="wlq-footer-links">
+    <a href="/impressum">Impressum</a>
+    <a href="/datenschutz">Datenschutzerklärung</a>
+  </div>
+</footer>
 
 <script>
   const SUPABASE_URL = 'https://lwjyhsdlqpohnttxoacr.supabase.co';
