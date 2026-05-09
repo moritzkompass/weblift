@@ -680,10 +680,10 @@
     max-width: 22ch;
   }
   .wlq-landing-sub {
-    font-size: 0.98rem;
+    font-size: 0.88rem;
     color: var(--text-soft);
     line-height: 1.55;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.85rem;
     max-width: 42ch;
     text-wrap: balance;
   }
@@ -1052,8 +1052,8 @@
       + '<div class="wlq-landing-photo"><img src="assets/moritz.jpg" alt="Moritz Kompaß" loading="eager"></div>'
       + '<div class="wlq-landing-badge">Hey, ich bin Moritz 👋🏻</div>'
       + '<h1 class="wlq-landing-headline">Erzähl mir von deinem Projekt.</h1>'
-      + '<p class="wlq-landing-sub">Du hast eines meiner Projekte gesehen – jetzt bin ich gespannt auf deins.</p>'
-      + '<p class="wlq-landing-sub wlq-landing-sub-2">Beantworte kurz ein paar Fragen und du erhältst innerhalb von 24 Stunden eine persönliche Rückmeldung.</p>'
+      + '<p class="wlq-landing-sub">Du hast eines meiner Kundenprojekte gesehen. Jetzt bin ich gespannt auf deins.</p>'
+      + '<p class="wlq-landing-sub wlq-landing-sub-2">Beantworte kurz ein paar Fragen und du erhältst eine persönliche Rückmeldung von mir.</p>'
       + '<button class="wlq-landing-cta" onclick="wlqStartQuiz()">Projekt anfragen '+I.arrow+'</button>'
       + '<div class="wlq-landing-note">Persönlich beantwortet. Kein Auto-Reply.</div>'
       + '<div class="wlq-landing-divider"></div>'
@@ -1185,9 +1185,10 @@
       const sd = getStep(id);
       h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
       h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
+      // Defensive: if previously set to 'video', reset to 'voice'
+      if(recMode === 'video') recMode = 'voice';
       h += '<div class="wlq-rec-toggle">';
       h += '<button class="wlq-rec-tab'+(recMode==='voice'?' active':'')+'" onclick="wlqRecMode(\'voice\')">'+I.mic+' Sprache</button>';
-      h += '<button class="wlq-rec-tab'+(recMode==='video'?' active':'')+'" onclick="wlqRecMode(\'video\')">'+I.cam+' Video</button>';
       h += '<button class="wlq-rec-tab'+(recMode==='text'?' active':'')+'" onclick="wlqRecMode(\'text\')">'+I.pen+' Text</button>';
       h += '</div>';
       h += '<div class="wlq-rec-area" id="wlqRecArea"></div>';
