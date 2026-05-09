@@ -808,6 +808,67 @@
   let submitted = false;
   let ac = null;
 
+  // ===== UTM / ATTRIBUTION TRACKING =====
+  // Captures utm_source etc. from URL on landing, persists in localStorage 30 days.
+  // Last-touch attribution: if URL has new UTMs, they overwrite. Else stored values remain.
+  // Auto-fallback: if no utm_source but document.referrer present, derive from hostname.
+  const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'];
+  const UTM_STORAGE_KEY = 'wlq_attribution_v1';
+  const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+  function captureAttribution(){
+    let stored = {};
+    try {
+      const raw = localStorage.getItem(UTM_STORAGE_KEY);
+      if(raw){
+        const p = JSON.parse(raw);
+        if(p && p.ts && (Date.now() - p.ts < UTM_TTL_MS)) stored = p.data || {};
+      }
+    } catch(e){}
+
+    // Parse URL params
+    const params = new URLSearchParams(window.location.search);
+    const fresh = {};
+    let hasFreshUTM = false;
+    for(const k of UTM_KEYS){
+      const v = params.get(k);
+      if(v){ fresh[k] = v.slice(0, 200); hasFreshUTM = true; }
+    }
+
+    // Last-touch: if URL has any utm_* (or click ID), overwrite stored
+    let merged;
+    if(hasFreshUTM){
+      merged = { ...stored, ...fresh };
+    } else {
+      merged = stored;
+    }
+
+    // Auto-fallback: derive utm_source from referrer hostname if no utm_source set
+    let referrerHostname = null;
+    try {
+      if(document.referrer){
+        const u = new URL(document.referrer);
+        if(u.hostname && u.hostname !== window.location.hostname){
+          referrerHostname = u.hostname.replace(/^www\./, '');
+          if(!merged.utm_source){
+            merged.utm_source = referrerHostname;
+            merged.utm_medium = merged.utm_medium || 'referral';
+          }
+        }
+      }
+    } catch(e){}
+    if(referrerHostname) merged.referrer_hostname = referrerHostname;
+
+    // Persist
+    try {
+      localStorage.setItem(UTM_STORAGE_KEY, JSON.stringify({ data: merged, ts: Date.now() }));
+    } catch(e){}
+
+    return merged;
+  }
+
+  const attribution = captureAttribution();
+
   // ===== QUIZ-CONTENT FALLBACK + LIVE-LOAD =====
   // Hardcoded quiz content used as fallback if Supabase RPC fails or times out.
   // Mirror DB schema (public.quiz_steps) so render code is unified.
@@ -1453,7 +1514,15 @@
         voice_message_text: ans.voiceText || null,
         voice_message_url: voiceUrl,
         referrer_url: document.referrer || null,
-        user_agent: navigator.userAgent || null
+        user_agent: navigator.userAgent || null,
+        utm_source: attribution.utm_source || null,
+        utm_medium: attribution.utm_medium || null,
+        utm_campaign: attribution.utm_campaign || null,
+        utm_term: attribution.utm_term || null,
+        utm_content: attribution.utm_content || null,
+        gclid: attribution.gclid || null,
+        fbclid: attribution.fbclid || null,
+        referrer_hostname: attribution.referrer_hostname || null
       };
       await insertLeadToSupabase(row);
       console.log('[weblift] Lead submitted to Supabase ✓');
