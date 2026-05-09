@@ -890,6 +890,61 @@
 
   const attribution = captureAttribution();
 
+  // ===== ANONYMOUS ANALYTICS (no cookies, sessionStorage only) =====
+  const ANALYTICS_SESSION_KEY = 'wlq_analytics_session_v1';
+  function getAnalyticsSessionId(){
+    try {
+      let sid = sessionStorage.getItem(ANALYTICS_SESSION_KEY);
+      if(!sid){
+        sid = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+        sessionStorage.setItem(ANALYTICS_SESSION_KEY, sid);
+      }
+      return sid;
+    } catch(e) { return 'no-storage-' + Date.now(); }
+  }
+  function shortUA(){
+    const ua = navigator.userAgent || '';
+    const browserMatch = ua.match(/(Chrome|Safari|Firefox|Edge|OPR|SamsungBrowser)\/[\d.]+/);
+    const browser = browserMatch ? browserMatch[1] : 'Other';
+    const osMatch = ua.match(/(Windows|Mac OS X|iPhone|iPad|Android|Linux)/);
+    const os = osMatch ? osMatch[1].replace('Mac OS X','Mac') : 'Other';
+    return browser + '/' + os;
+  }
+  const _trackedSteps = new Set();
+  function track(eventType, extra){
+    try {
+      const payload = Object.assign({
+        session_id: getAnalyticsSessionId(),
+        event_type: eventType,
+        utm_source: attribution.utm_source || null,
+        utm_medium: attribution.utm_medium || null,
+        utm_campaign: attribution.utm_campaign || null,
+        referrer_hostname: attribution.referrer_hostname || null,
+        user_agent_short: shortUA()
+      }, extra || {});
+      fetch(SUPABASE_URL + '/rest/v1/rpc/track_event', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ payload }),
+        keepalive: true
+      }).catch(()=>{});
+    } catch(e) {}
+  }
+  function trackStepOnce(stepKey, stepIndex){
+    const key = 'step:' + stepKey;
+    if(_trackedSteps.has(key)) return;
+    _trackedSteps.add(key);
+    track('step_view', { step_key: stepKey, step_index: stepIndex });
+  }
+  // Initial page view fires immediately
+  track('page_view');
+
   // ===== QUIZ-CONTENT FALLBACK + LIVE-LOAD =====
   // Hardcoded quiz content used as fallback if Supabase RPC fails or times out.
   // Mirror DB schema (public.quiz_steps) so render code is unified.
@@ -1097,6 +1152,7 @@
     screen = 'quiz';
     step = 0;
     snd('nxt');
+    track('quiz_start');
     render();
   };
 
@@ -1116,6 +1172,7 @@
 
     if(step >= total){ renderSuccess(); return; }
     const id = STEPS[step];
+    trackStepOnce(id, step);
     let h = '<div class="wlq-step">';
 
     if(id==='website'){
@@ -1555,6 +1612,7 @@
       };
       await insertLeadToSupabase(row);
       console.log('[weblift] Lead submitted to Supabase ✓');
+      track('submit');
     } catch(e){
       console.error('[weblift] Submit error:', e);
       alert('Anfrage konnte nicht gesendet werden. Bitte später nochmal versuchen oder direkt an office@weblift.at schreiben.');
