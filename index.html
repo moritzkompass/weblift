@@ -1256,6 +1256,12 @@
       const h = heights[i%heights.length];
       barsHtml += '<span class="wlq-voice-bar" data-i="'+i+'" style="height:'+h+'%"></span>';
     }
+    // Extract first name for personalized voice caption
+    const rawName = (formData.name || '').trim();
+    const firstName = rawName ? rawName.split(/\s+/)[0] : '';
+    const voiceCaption = firstName
+      ? 'Eine kurze Nachricht für <strong>'+escHtml(firstName)+'</strong>.'
+      : 'Eine kurze Nachricht von mir.';
     el('wlqSteps').innerHTML = ''
       + '<div class="wlq-step"><div class="wlq-success">'
       +   '<div class="wlq-success-icon">'+I.check+'</div>'
@@ -1268,7 +1274,7 @@
       +       '<div class="wlq-voice-bars" id="wlqVBars" onclick="wlqVoiceSeek(event)">'+barsHtml+'</div>'
       +       '<div class="wlq-voice-time" id="wlqVTime">0:34</div>'
       +     '</div>'
-      +     '<div class="wlq-voice-caption">Eine kurze Nachricht von mir.</div>'
+      +     '<div class="wlq-voice-caption">'+voiceCaption+'</div>'
       +     '<audio id="wlqVAudio" preload="metadata" src="assets/moritz-greeting.m4a"></audio>'
       +   '</div>'
       +   '<p style="margin-top:1.25rem">Ich melde mich persönlich. Spätestens in 24 Stunden.</p>'
