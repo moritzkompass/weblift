@@ -603,19 +603,29 @@
     font-weight: 600;
     font-size: 0.85rem;
     color: var(--black);
-    opacity: 0.35;
     text-align: center;
     white-space: nowrap;
     letter-spacing: -0.3px;
-    transition: opacity 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
   }
-  .wlq-trust-logo:hover { opacity: 0.6; }
+  /* Text-only fallback (kept for safety): muted */
+  .wlq-trust-logo:not(:has(img)) { opacity: 0.35; transition: opacity 0.25s; }
+  .wlq-trust-logo:not(:has(img)):hover { opacity: 0.6; }
+  /* Real logo images: subtle grayscale, full color on hover */
   .wlq-trust-logo img {
-    height: 28px;
+    height: 26px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
-    filter: grayscale(1) brightness(0);
+    filter: grayscale(1);
+    opacity: 0.5;
+    transition: filter 0.3s, opacity 0.3s;
+  }
+  .wlq-trust-logo:hover img {
+    filter: grayscale(0);
     opacity: 1;
   }
 
@@ -631,11 +641,13 @@
     .wlq-landing { padding: 2rem 1.5rem 1.75rem; }
   }
   .wlq-landing-logo {
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: -0.4px;
-    color: var(--brand);
     margin-bottom: 2rem;
+    line-height: 0;
+  }
+  .wlq-landing-logo img {
+    height: 22px;
+    width: auto;
+    display: block;
   }
   .wlq-landing-photo {
     width: 96px; height: 96px;
@@ -1048,7 +1060,7 @@
     el('wlqHeader').style.display = 'none';
     el('wlqSteps').innerHTML = ''
       + '<div class="wlq-landing">'
-      + '<div class="wlq-landing-logo">weblift</div>'
+      + '<div class="wlq-landing-logo"><img src="assets/weblift-logo.svg" alt="weblift"></div>'
       + '<div class="wlq-landing-photo"><img src="assets/moritz.jpg" alt="Moritz Kompaß" loading="eager"></div>'
       + '<div class="wlq-landing-badge">Hey, ich bin Moritz 👋🏻</div>'
       + '<h1 class="wlq-landing-headline">Erzähl mir von deinem Projekt.</h1>'
@@ -1059,12 +1071,12 @@
       + '<div class="wlq-landing-divider"></div>'
       + '<div class="wlq-landing-trust-title">Vertrauen von Personenmarken &amp; Unternehmen wie</div>'
       + '<div class="wlq-trust-grid">'
-      + '<div class="wlq-trust-logo">investmentpunk</div>'
-      + '<div class="wlq-trust-logo">Markus Rotter</div>'
-      + '<div class="wlq-trust-logo">riffbird</div>'
-      + '<div class="wlq-trust-logo">Duske Partner</div>'
-      + '<div class="wlq-trust-logo">heritsch media</div>'
-      + '<div class="wlq-trust-logo">7 PLUS</div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/investmentpunk-weblift.png" alt="investmentpunk" loading="lazy"></div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/rotter-weblift.png" alt="Markus Rotter" loading="lazy"></div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/riffbird-weblift.png" alt="riffbird" loading="lazy"></div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/duske-weblift.png" alt="Duske Partner" loading="lazy"></div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/heritsch-weblift.png" alt="heritsch media" loading="lazy"></div>'
+      + '<div class="wlq-trust-logo"><img src="assets/kundenlogos/7plus-weblift.png" alt="7 PLUS" loading="lazy"></div>'
       + '</div>'
       + '<div class="wlq-landing-signature">'
       +   '<div class="name">Moritz Kompaß</div>'
