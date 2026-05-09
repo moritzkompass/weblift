@@ -809,6 +809,144 @@
   let submitted = false;
   let ac = null;
 
+  // ===== QUIZ-CONTENT FALLBACK + LIVE-LOAD =====
+  // Hardcoded quiz content used as fallback if Supabase RPC fails or times out.
+  // Mirror DB schema (public.quiz_steps) so render code is unified.
+  const FALLBACK_STEPS = {
+    website: { step_key:'website', step_type:'text',
+      question:'Womit bist du gerade unterwegs?',
+      subtitle:'Falls du eine Site hast. Schauen wir uns vorab an.',
+      skip_label:'Ich habe noch keine.', show_skip:true, options:[] },
+    branche: { step_key:'branche', step_type:'single',
+      question:'Was machst du beruflich?',
+      subtitle:'Bestimmt unseren Ton im Erstgespräch.',
+      options:[
+        { label:'Personenmarke (Coach, Berater, Speaker)', value:'Personenmarke' },
+        { label:'Agentur oder SaaS', value:'Agentur/SaaS' },
+        { label:'Anwalt, Steuerberater oder Arzt', value:'Anwalt/Steuerberater/Arzt' },
+        { label:'KMU', value:'KMU' },
+        { label:'Sonstiges', value:'Sonstiges', allow_text:true }
+      ] },
+    vorhaben: { step_key:'vorhaben', step_type:'single',
+      question:'Was schwebt dir vor?',
+      subtitle:'Grobe Richtung reicht.',
+      options:[
+        { label:'Landingpage / Funnel', sub:'Eine fokussierte Seite, ein klares Ziel', icon:'funnel', value:'Landingpage/Funnel' },
+        { label:'Umfangreiche Website', sub:'Mehrere Seiten, voll durchgestylt', icon:'site', value:'Umfangreiche Website' },
+        { label:'Online Shop', sub:'Verkauf, Checkout, Bestellungen', icon:'cart', value:'Online Shop' },
+        { label:'Etwas anderes', sub:'Sag uns gleich was.', icon:'spark', value:'Sonstiges', allow_text:true }
+      ] },
+    ziele: { step_key:'ziele', step_type:'multi',
+      question:'Was muss die Site können?',
+      subtitle:'Wähl alles was zählt.',
+      options:[
+        { label:'Premium-Wirkung', sub:'Aussehen das meine Marke verdient.', icon:'diamond' },
+        { label:'Mehr qualifizierte Anfragen', sub:'Leute, die wirklich passen.', icon:'funnel' },
+        { label:'Top-Sichtbarkeit', sub:'Bei Google oben.', icon:'eye' },
+        { label:'Pflegeleicht', sub:'Die Site pflegt sich selbst.', icon:'workflow' },
+        { label:'Einzigartiger Look', sub:'Nicht der gleiche Look wie überall.', icon:'pen' },
+        { label:'Mit der Zeit besser werden', sub:'Wird mit der Zeit besser.', icon:'trending' },
+        { label:'Etwas anderes', sub:'Sag uns gleich was.', icon:'spark' }
+      ] },
+    timing: { step_key:'timing', step_type:'single',
+      question:'Wann willst du loslegen?',
+      subtitle:'Wir bauen wenige Sites parallel. Hilft uns einsortieren.',
+      options:[
+        { label:'So schnell wie möglich', value:'ASAP' },
+        { label:'In 1 bis 3 Monaten', value:'1-3 Monate' },
+        { label:'In 3 bis 6 Monaten', value:'3-6 Monate' },
+        { label:'Flexibel', value:'Flexibel' }
+      ] },
+    budget: { step_key:'budget', step_type:'single',
+      question:'In welcher Liga spielen wir?',
+      subtitle:'Keine Preise versteckt. Sag\'s gerade.',
+      options:[
+        { label:'unter 5.000 €', value:'<5k' },
+        { label:'5.000 bis 8.000 €', value:'5-8k' },
+        { label:'8.000 bis 15.000 €', value:'8-15k' },
+        { label:'15.000 bis 20.000 €', value:'15-20k' },
+        { label:'über 20.000 €. Sprechen wir.', value:'>20k' }
+      ] },
+    voice: { step_key:'voice', step_type:'voice',
+      question:'Erzähl mir kurz deine Vision.',
+      subtitle:'Sprache, Video oder Text. Optional aber hilft mir.',
+      skip_label:'Lieber nichts dazu sagen', show_skip:true, options:[] },
+    kontakt: { step_key:'kontakt', step_type:'contact',
+      question:'Wohin schicken wir die Antwort?',
+      subtitle:'Letzter Schritt. Innerhalb 24 Stunden, persönlich von mir.',
+      options:[] }
+  };
+
+  let quizSteps = null; // populated by loadQuizSteps() from DB; null = use FALLBACK
+  const QUIZ_CACHE_KEY = 'wlq_quiz_steps_v1';
+  const QUIZ_CACHE_TTL = 60_000; // 1 min — long enough to dedup within session, short enough to pick up edits
+
+  async function loadQuizSteps() {
+    // Escape hatch: ?refresh=1 in URL bypasses cache (useful when testing editor changes)
+    const skipCache = (typeof URLSearchParams !== 'undefined') &&
+                      new URLSearchParams(window.location.search).get('refresh') === '1';
+    if (skipCache) {
+      try { sessionStorage.removeItem(QUIZ_CACHE_KEY); } catch(e){}
+    } else {
+      // sessionStorage hit?
+      try {
+        const cached = sessionStorage.getItem(QUIZ_CACHE_KEY);
+        if (cached) {
+          const p = JSON.parse(cached);
+          if (p && p.steps && p.ts && (Date.now() - p.ts < QUIZ_CACHE_TTL)) return p.steps;
+        }
+      } catch(e){}
+    }
+    // RPC fetch with abort
+    try {
+      const ctrl = new AbortController();
+      const tm = setTimeout(()=>ctrl.abort(), 1500);
+      const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/get_quiz_steps', {
+        method:'POST',
+        headers:{
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: '{}',
+        signal: ctrl.signal
+      });
+      clearTimeout(tm);
+      if (!res.ok) return null;
+      const arr = await res.json();
+      if (!Array.isArray(arr) || !arr.length) return null;
+      const map = {};
+      for (const s of arr) {
+        if (s && s.step_key) map[s.step_key] = s;
+      }
+      // Validate all 8 steps present + each has question
+      for (const k of STEPS) {
+        if (!map[k] || !map[k].question) return null;
+      }
+      try { sessionStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify({ steps: map, ts: Date.now() })); } catch(e){}
+      return map;
+    } catch(e) {
+      console.warn('[weblift] quiz_steps RPC failed, using fallback', e);
+      return null;
+    }
+  }
+
+  // Helpers — always return a step object, defaulting to FALLBACK
+  function getStep(id) {
+    return (quizSteps && quizSteps[id]) || FALLBACK_STEPS[id];
+  }
+  function getOptions(id) {
+    const s = getStep(id);
+    return (Array.isArray(s.options) && s.options.length) ? s.options : FALLBACK_STEPS[id].options;
+  }
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function getIconSvg(name) {
+    return (name && I[name]) || '';
+  }
+
   function snd(t){
     try {
       if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
@@ -899,105 +1037,104 @@
     let h = '<div class="wlq-step">';
 
     if(id==='website'){
+      const sd = getStep(id);
       h += '<div class="wlq-time">'+I.clock+' Zwei Minuten.</div>';
-      h += '<div class="wlq-q">Womit bist du gerade unterwegs?</div>';
-      h += '<div class="wlq-sub">Falls du eine Site hast. Schauen wir uns vorab an.</div>';
-      h += '<div class="wlq-url-field"><span class="url-icon">'+I.globe+'</span><input class="wlq-input" id="wlqUrl" type="url" placeholder="deinewebsite.at" value="'+(ans.websiteUrl||'')+'" autofocus></div>';
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
+      h += '<div class="wlq-url-field"><span class="url-icon">'+I.globe+'</span><input class="wlq-input" id="wlqUrl" type="url" placeholder="deinewebsite.at" value="'+escHtml(ans.websiteUrl||'')+'" autofocus></div>';
       h += '<button id="wlqUrlCta" class="wlq-cta'+(ans.websiteUrl?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
-      h += '<button class="wlq-skip" onclick="ans.websiteUrl=\'\';snd(\'nxt\');wlqNext()">Ich habe noch keine.</button>';
+      if(sd.show_skip !== false && sd.skip_label){
+        h += '<button class="wlq-skip" onclick="ans.websiteUrl=\'\';snd(\'nxt\');wlqNext()">'+escHtml(sd.skip_label)+'</button>';
+      }
     }
     else if(id==='branche'){
-      const opts = ['Personenmarke (Coach, Berater, Speaker)','Agentur oder SaaS','Anwalt, Steuerberater oder Arzt','KMU','Sonstiges'];
-      h += '<div class="wlq-q">Was machst du beruflich?</div>';
-      h += '<div class="wlq-sub">Bestimmt unseren Ton im Erstgespräch.</div>';
+      const sd = getStep(id);
+      const opts = getOptions(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.branche===i ? ' selected' : '';
-        h += '<button class="wlq-a'+sel+'" onclick="wlqBranche('+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqBranche('+i+')"><span class="wlq-ind"></span><span>'+escHtml(o.label)+'</span></button>';
       });
       h += '</div>';
-      if(ans.branche===4){
-        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqBrancheText" placeholder="Was genau machst du?" value="'+(ans.brancheText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
+      if(ans.branche !== undefined && opts[ans.branche] && opts[ans.branche].allow_text){
+        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqBrancheText" placeholder="Was genau machst du?" value="'+escHtml(ans.brancheText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
         h += '<button id="wlqBrancheCta" class="wlq-cta'+(ans.brancheText?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
       }
     }
     else if(id==='vorhaben'){
-      const opts = [
-        [I.funnel,'Landingpage / Funnel','Eine fokussierte Seite, ein klares Ziel'],
-        [I.site,'Umfangreiche Website','Mehrere Seiten, voll durchgestylt'],
-        [I.cart,'Online Shop','Verkauf, Checkout, Bestellungen'],
-        [I.spark,'Etwas anderes','Sag\'s uns gleich']
-      ];
-      h += '<div class="wlq-q">Was schwebt dir vor?</div>';
-      h += '<div class="wlq-sub">Grobe Richtung reicht.</div>';
+      const sd = getStep(id);
+      const opts = getOptions(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.vorhaben===i ? ' selected' : '';
-        h += '<button class="wlq-a'+sel+'" onclick="wlqVorhaben('+i+')"><span class="wlq-ind"></span><span class="wlq-icon">'+o[0]+'</span><span class="wlq-a-content"><span>'+o[1]+'</span><span class="wlq-a-sub">'+o[2]+'</span></span></button>';
+        const ic = getIconSvg(o.icon);
+        h += '<button class="wlq-a'+sel+'" onclick="wlqVorhaben('+i+')"><span class="wlq-ind"></span>'+(ic?'<span class="wlq-icon">'+ic+'</span>':'')+'<span class="wlq-a-content"><span>'+escHtml(o.label)+'</span>'+(o.sub?'<span class="wlq-a-sub">'+escHtml(o.sub)+'</span>':'')+'</span></button>';
       });
       h += '</div>';
-      if(ans.vorhaben===3){
-        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqVorhabenText" placeholder="Was möchtest du bauen?" value="'+(ans.vorhabenText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
+      if(ans.vorhaben !== undefined && opts[ans.vorhaben] && opts[ans.vorhaben].allow_text){
+        h += '<div style="margin-top:0.65rem"><input class="wlq-input" id="wlqVorhabenText" placeholder="Was möchtest du bauen?" value="'+escHtml(ans.vorhabenText||'')+'" style="padding:0.95rem 1.1rem;border-width:1.5px;border-radius:0.6rem;font-size:0.95rem"></div>';
         h += '<button id="wlqVorhabenCta" class="wlq-cta'+(ans.vorhabenText?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
       }
     }
     else if(id==='ziele'){
-      const opts = [
-        [I.diamond,'Premium-Wirkung','Aussehen das meine Marke verdient.'],
-        [I.funnel,'Mehr qualifizierte Anfragen','Leute, die wirklich passen.'],
-        [I.eye,'Top-Sichtbarkeit','Bei Google oben.'],
-        [I.workflow,'Pflegeleicht','Die Site pflegt sich selbst.'],
-        [I.pen,'Einzigartiger Look','Nicht der gleiche Look wie überall.'],
-        [I.trending,'Mit der Zeit besser werden','Wird mit der Zeit besser.'],
-        [I.spark,'Etwas anderes','Sag\'s uns gleich']
-      ];
-      h += '<div class="wlq-q">Was muss die Site können?</div>';
-      h += '<div class="wlq-sub">Wähl alles was zählt.</div>';
+      const sd = getStep(id);
+      const opts = getOptions(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-multi-hint">Mehrfachauswahl möglich</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.ziele.includes(i) ? ' selected' : '';
-        h += '<button class="wlq-a multi'+sel+'" onclick="wlqMulti(\'ziele\','+i+')"><span class="wlq-ind"></span><span class="wlq-icon">'+o[0]+'</span><span class="wlq-a-content"><span>'+o[1]+'</span><span class="wlq-a-sub">'+o[2]+'</span></span></button>';
+        const ic = getIconSvg(o.icon);
+        h += '<button class="wlq-a multi'+sel+'" onclick="wlqMulti(\'ziele\','+i+')"><span class="wlq-ind"></span>'+(ic?'<span class="wlq-icon">'+ic+'</span>':'')+'<span class="wlq-a-content"><span>'+escHtml(o.label)+'</span>'+(o.sub?'<span class="wlq-a-sub">'+escHtml(o.sub)+'</span>':'')+'</span></button>';
       });
       h += '</div>';
       h += '<button class="wlq-cta'+(ans.ziele.length>0?' on':'')+'" onclick="snd(\'nxt\');wlqNext()">Weiter '+I.arrow+'</button>';
     }
     else if(id==='timing'){
-      const opts = ['So schnell wie möglich','In 1 bis 3 Monaten','In 3 bis 6 Monaten','Flexibel'];
-      h += '<div class="wlq-q">Wann willst du loslegen?</div>';
-      h += '<div class="wlq-sub">Wir bauen wenige Sites parallel. Hilft uns einsortieren.</div>';
+      const sd = getStep(id);
+      const opts = getOptions(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.timing===i ? ' selected' : '';
-        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'timing\','+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'timing\','+i+')"><span class="wlq-ind"></span><span>'+escHtml(o.label)+'</span></button>';
       });
       h += '</div>';
     }
     else if(id==='budget'){
-      const opts = ['unter 5.000 €','5.000 bis 8.000 €','8.000 bis 15.000 €','15.000 bis 20.000 €','über 20.000 €. Sprechen wir.'];
-      h += '<div class="wlq-q">In welcher Liga spielen wir?</div>';
-      h += '<div class="wlq-sub">Keine Preise versteckt. Sag\'s gerade.</div>';
+      const sd = getStep(id);
+      const opts = getOptions(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-answers">';
       opts.forEach((o,i)=>{
         const sel = ans.budget===i ? ' selected' : '';
-        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'budget\','+i+')"><span class="wlq-ind"></span><span>'+o+'</span></button>';
+        h += '<button class="wlq-a'+sel+'" onclick="wlqSingle(\'budget\','+i+')"><span class="wlq-ind"></span><span>'+escHtml(o.label)+'</span></button>';
       });
       h += '</div>';
     }
     else if(id==='voice'){
-      h += '<div class="wlq-q">Erzähl mir kurz deine Vision.</div>';
-      h += '<div class="wlq-sub">Sprache, Video oder Text. Optional aber hilft mir.</div>';
+      const sd = getStep(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-rec-toggle">';
       h += '<button class="wlq-rec-tab'+(recMode==='voice'?' active':'')+'" onclick="wlqRecMode(\'voice\')">'+I.mic+' Sprache</button>';
       h += '<button class="wlq-rec-tab'+(recMode==='video'?' active':'')+'" onclick="wlqRecMode(\'video\')">'+I.cam+' Video</button>';
       h += '<button class="wlq-rec-tab'+(recMode==='text'?' active':'')+'" onclick="wlqRecMode(\'text\')">'+I.pen+' Text</button>';
       h += '</div>';
       h += '<div class="wlq-rec-area" id="wlqRecArea"></div>';
-      h += '<button class="wlq-skip" id="wlqSkip" onclick="snd(\'nxt\');wlqNext()">Lieber nichts dazu sagen</button>';
+      h += '<button class="wlq-skip" id="wlqSkip" onclick="snd(\'nxt\');wlqNext()">'+escHtml(sd.skip_label || 'Überspringen')+'</button>';
     }
     else if(id==='kontakt'){
-      h += '<div class="wlq-q">Wohin schicken wir die Antwort?</div>';
-      h += '<div class="wlq-sub">Letzter Schritt. Innerhalb 24 Stunden, persönlich von mir.</div>';
+      const sd = getStep(id);
+      h += '<div class="wlq-q">'+escHtml(sd.question)+'</div>';
+      h += '<div class="wlq-sub">'+escHtml(sd.subtitle)+'</div>';
       h += '<div class="wlq-fields">';
       h += '<div class="wlq-field"><label>Name</label><input class="wlq-field-input" id="wlqName" placeholder="Maria Müller" value="'+formData.name+'"></div>';
       h += '<div class="wlq-field"><label>E-Mail</label><input class="wlq-field-input" id="wlqEmail" type="email" placeholder="maria@example.com" value="'+formData.email+'"></div>';
@@ -1016,13 +1153,19 @@
     }
     if(id==='voice') renderRec();
     if(id==='kontakt') wireForm();
-    if(id==='branche' && ans.branche===4){
-      const ti = el('wlqBrancheText');
-      if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.brancheText = e.target.value.trim(); el('wlqBrancheCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+    if(id==='branche'){
+      const opts = getOptions(id);
+      if(ans.branche !== undefined && opts[ans.branche] && opts[ans.branche].allow_text){
+        const ti = el('wlqBrancheText');
+        if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.brancheText = e.target.value.trim(); el('wlqBrancheCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+      }
     }
-    if(id==='vorhaben' && ans.vorhaben===3){
-      const ti = el('wlqVorhabenText');
-      if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.vorhabenText = e.target.value.trim(); el('wlqVorhabenCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+    if(id==='vorhaben'){
+      const opts = getOptions(id);
+      if(ans.vorhaben !== undefined && opts[ans.vorhaben] && opts[ans.vorhaben].allow_text){
+        const ti = el('wlqVorhabenText');
+        if(ti){ setTimeout(()=>ti.focus(),50); ti.addEventListener('input', e => { ans.vorhabenText = e.target.value.trim(); el('wlqVorhabenCta').classList.toggle('on', e.target.value.trim().length>0); }); }
+      }
     }
   }
 
@@ -1126,13 +1269,17 @@
   window.wlqBranche = function(idx){
     ans.branche = idx;
     snd('sel');
-    if(idx===4){ render(); }
+    const opts = getOptions('branche');
+    const allowText = opts[idx] && opts[idx].allow_text;
+    if(allowText){ render(); }
     else { ans.brancheText=''; const btns=document.querySelectorAll('.wlq-a'); btns.forEach(b=>b.classList.remove('selected')); btns[idx].classList.add('selected'); setTimeout(()=>{ snd('nxt'); wlqNext(); }, 350); }
   };
   window.wlqVorhaben = function(idx){
     ans.vorhaben = idx;
     snd('sel');
-    if(idx===3){ render(); }
+    const opts = getOptions('vorhaben');
+    const allowText = opts[idx] && opts[idx].allow_text;
+    if(allowText){ render(); }
     else { ans.vorhabenText=''; const btns=document.querySelectorAll('.wlq-a'); btns.forEach(b=>b.classList.remove('selected')); btns[idx].classList.add('selected'); setTimeout(()=>{ snd('nxt'); wlqNext(); }, 350); }
   };
   window.wlqNext = function(){ if(step<STEPS.length){ step++; render(); } };
@@ -1271,12 +1418,13 @@
     if(!formData.name || !formData.email || !el('wlqDsgvo').checked) return;
     submitted = true;
     snd('nxt');
-    const labels = {
-      ziele: ['Premium-Wirkung','Mehr qualifizierte Anfragen','Top-Sichtbarkeit','Pflegeleicht','Einzigartiger Look','Mit der Zeit besser werden','Etwas anderes'],
-      branche: ['Personenmarke','Agentur/SaaS','Anwalt/Steuerberater/Arzt','KMU','Sonstiges'],
-      vorhaben: ['Landingpage/Funnel','Umfangreiche Website','Online Shop','Sonstiges'],
-      timing: ['ASAP','1-3 Monate','3-6 Monate','Flexibel'],
-      budget: ['<5k','5-8k','8-15k','15-20k','>20k']
+    // Build labels from DB options (preferring `value` over `label` for canonical short codes)
+    const labelFor = (key, idx) => {
+      if (idx === undefined || idx === null) return null;
+      const opts = getOptions(key);
+      const o = opts[idx];
+      if (!o) return null;
+      return o.value || o.label || null;
     };
     // Voice/Video Upload: best-effort, blockt nicht den Insert
     let voiceUrl = null;
@@ -1294,13 +1442,13 @@
         email: formData.email,
         telefon: formData.phone ? formData.code + ' ' + formData.phone : null,
         website_url: ans.websiteUrl || null,
-        branche: ans.branche !== undefined ? labels.branche[ans.branche] : null,
+        branche: labelFor('branche', ans.branche),
         branche_sonstiges: ans.brancheText || null,
-        vorhaben: ans.vorhaben !== undefined ? labels.vorhaben[ans.vorhaben] : null,
+        vorhaben: labelFor('vorhaben', ans.vorhaben),
         vorhaben_sonstiges: ans.vorhabenText || null,
-        ziele: ans.ziele.map(i => labels.ziele[i]),
-        go_live: ans.timing !== undefined ? labels.timing[ans.timing] : null,
-        budget: ans.budget !== undefined ? labels.budget[ans.budget] : null,
+        ziele: ans.ziele.map(i => labelFor('ziele', i)).filter(Boolean),
+        go_live: labelFor('timing', ans.timing),
+        budget: labelFor('budget', ans.budget),
         voice_message_type: recBlob ? recMode : (ans.voiceText ? 'text' : null),
         voice_message_duration: recBlob ? recSecs : null,
         voice_message_text: ans.voiceText || null,
@@ -1320,7 +1468,23 @@
     render();
   };
 
-  render();
+  // ===== INIT =====
+  // Race the RPC against a 250ms timeout for first render. If RPC is faster, we use DB data.
+  // If timeout wins, we use hardcoded FALLBACK and update silently when RPC arrives.
+  // Either way: NO blocking spinner, NO blank screen.
+  (async function initQuiz(){
+    const fetchPromise = loadQuizSteps();
+    const fast = await Promise.race([
+      fetchPromise,
+      new Promise(r => setTimeout(()=>r(null), 250))
+    ]);
+    if (fast) quizSteps = fast;
+    render();
+    if (!fast) {
+      // Background completion — picked up at next render() call (e.g. when user clicks Anfrage starten)
+      fetchPromise.then(s => { if (s) quizSteps = s; });
+    }
+  })();
 </script>
 </body>
 </html>
